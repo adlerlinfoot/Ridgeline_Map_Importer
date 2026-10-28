@@ -1,0 +1,20 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {readFileSync,existsSync} from 'node:fs';
+import {validateDraft,compileDraft} from '../public/core.mjs';
+import {extractJSON} from '../lib/vision.mjs';
+import {draft} from './fixture.mjs';
+test('arbitrary three-lift map compiles without original Ridgeline IDs',()=>{const b=compileDraft(draft());assert.equal(b.map.lifts.length,3);assert.equal(b.spawnNode,'home');assert.equal(b.map.scenarios.imported.active_lifts[0],'Chair_0');assert.ok(b.map.lifts.every(l=>l.capacity_skiers_per_hour===600));assert.ok(b.map.nodes.every(n=>n.elevation_m>=2350&&n.elevation_m<=3100));});
+test('physical scale preserves original image path distance after canonical fitting',()=>{const d=draft(),b=compileDraft(d,{metersPerPixel:3});const walk=b.map.transfers.find(e=>e.id==='WalkA');assert.ok(Math.abs(walk.centerline_length_m-1200)<1e-8);assert.equal(b.map.coordinate_system.meters_per_pixel_xy,3/1.2571428571428571);});
+test('review checkbox and blocking image uncertainty gate compilation',()=>{let d=draft();d.reviewed=false;assert.throws(()=>compileDraft(d),/review/i);d=draft();d.uncertainties.push({id:'U1',message:'Crossing unclear',severity:'blocking',resolved:false});assert.throws(()=>compileDraft(d),/Crossing unclear/);d.uncertainties[0].resolved=true;assert.ok(compileDraft(d));});
+test('invalid graph directions, disconnected routes and lodge access are rejected',()=>{let d=draft();d.edges.find(e=>e.id==='Run_0').to='home';assert.ok(validateDraft(d).errors.some(e=>/endpoint|descent/i.test(e)));d=draft();d.edges=d.edges.filter(e=>e.id!=='LodgeAccess');assert.ok(validateDraft(d).errors.some(e=>/Lodge has no walking path/.test(e)));d=draft();d.edges.push({id:'UpWrong',name:'bad',kind:'run',difficulty:'black',from:'base0',to:'peak0',points:[[100,600],[100,100]]});assert.ok(validateDraft(d).errors.some(e=>/cycle/.test(e)));});
+test('schema rejects prototype IDs and invalid geometry/service values',()=>{let d=draft();d.nodes[0].id='__proto__';assert.ok(validateDraft(d).errors.length);d=draft();d.edges[0].capacity=-1;assert.ok(validateDraft(d).errors.some(e=>/capacity/.test(e)));d=draft();d.edges[1].points[1]=[NaN,3];assert.ok(validateDraft(d).errors.some(e=>/polyline/.test(e)));});
+test('novice feasibility is checked and unknown physical data remains explicit',()=>{let d=draft();for(const e of d.edges)if(e.kind==='run')e.difficulty='black';assert.ok(validateDraft(d).errors.some(e=>/green\/blue/.test(e)));d=draft();const v=validateDraft(d);assert.ok(v.warnings.some(e=>/synthetic/.test(e)));assert.ok(v.warnings.some(e=>/park-lapper/.test(e)));});
+test('reference example validates as source topology and exposes lodge assumption',()=>{const d=JSON.parse(readFileSync(new URL('../public/example.json',import.meta.url)));assert.equal(validateDraft(d).errors.length,0);assert.ok(validateDraft(d).warnings.some(e=>/not printed/.test(e)));});
+test('vision JSON parser handles fences but rejects missing JSON',()=>{assert.deepEqual(extractJSON('```json\n{"ok":true}\n```'),{ok:true});assert.throws(()=>extractJSON('no map available'));});
+test('compiled plugin map runs through the actual Ridgeline engine when checkout is installed',{skip:!existsSync(new URL('../../Lift_Line_ABM/src/engine.mjs',import.meta.url))},async()=>{
+  const {Simulation}=await import('../../Lift_Line_ABM/src/engine.mjs');
+  const config=JSON.parse(readFileSync(new URL('../../Lift_Line_ABM/MODEL_CONFIG.json',import.meta.url))),b=compileDraft(draft());config.spawning.spawn_node=b.spawnNode;
+  for(const mode of ['fixed','arrival']){const s=new Simulation(b.map,config,{scenario:'imported',mode,initialAgents:100,dayMinutes:60,lodgePercent:35});while(!s.done){s.step(60);s.assertInvariants();}assert.equal(s.active.size,0);assert.ok(s.agents.filter(a=>a.class==='vacationer').every(a=>!a.visits.Chair_2));}
+});
+
+test("traced lift bends are preserved in compiled geometry",()=>{const d=draft();d.edges[0].points=[[100,600],[140,350],[100,100]];const b=compileDraft(d);assert.equal(b.map.lifts[0].polyline.length,3);assert.ok(b.map.lifts[0].centerline_length_m>1000);});

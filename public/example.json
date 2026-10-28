@@ -1,0 +1,1078 @@
+{
+  "name": "Ridgeline reference example",
+  "width": 1400,
+  "height": 960,
+  "legend": {
+    "corner": "top-left",
+    "entries": [
+      {
+        "label": "lift",
+        "meaning": "lift",
+        "color": "#bc294b"
+      },
+      {
+        "label": "green",
+        "meaning": "green",
+        "color": "#16a36a"
+      },
+      {
+        "label": "blue",
+        "meaning": "blue",
+        "color": "#1689de"
+      },
+      {
+        "label": "black",
+        "meaning": "black",
+        "color": "#202e3c"
+      },
+      {
+        "label": "park",
+        "meaning": "park",
+        "color": "#ff7b1c"
+      },
+      {
+        "label": "walking",
+        "meaning": "walking",
+        "color": "#aaaaaa"
+      }
+    ]
+  },
+  "lodge": "LODGE",
+  "nodes": [
+    {
+      "id": "W_TOP",
+      "name": "W_TOP",
+      "kind": "lift_top",
+      "x": 390,
+      "y": 165,
+      "elevation_m": null
+    },
+    {
+      "id": "W_BASE",
+      "name": "W_BASE",
+      "kind": "lift_base",
+      "x": 205,
+      "y": 830,
+      "elevation_m": null
+    },
+    {
+      "id": "E_TOP",
+      "name": "E_TOP",
+      "kind": "lift_top",
+      "x": 1010,
+      "y": 185,
+      "elevation_m": null
+    },
+    {
+      "id": "E_BASE",
+      "name": "E_BASE",
+      "kind": "lift_base",
+      "x": 1205,
+      "y": 835,
+      "elevation_m": null
+    },
+    {
+      "id": "M_TOP",
+      "name": "M_TOP",
+      "kind": "lift_top",
+      "x": 555,
+      "y": 515,
+      "elevation_m": null
+    },
+    {
+      "id": "M_BASE",
+      "name": "M_BASE",
+      "kind": "lift_base",
+      "x": 560,
+      "y": 870,
+      "elevation_m": null
+    },
+    {
+      "id": "A_TOP",
+      "name": "A_TOP",
+      "kind": "lift_top",
+      "x": 868,
+      "y": 530,
+      "elevation_m": null
+    },
+    {
+      "id": "A_BASE",
+      "name": "A_BASE",
+      "kind": "lift_base",
+      "x": 885,
+      "y": 875,
+      "elevation_m": null
+    },
+    {
+      "id": "M_JOIN",
+      "name": "M_JOIN",
+      "kind": "junction",
+      "x": 545,
+      "y": 410,
+      "elevation_m": null
+    },
+    {
+      "id": "PARK_MERGE",
+      "name": "PARK_MERGE",
+      "kind": "junction",
+      "x": 260,
+      "y": 500,
+      "elevation_m": null
+    },
+    {
+      "id": "RACE_GATE",
+      "name": "RACE_GATE",
+      "kind": "junction",
+      "x": 105,
+      "y": 430,
+      "elevation_m": null
+    },
+    {
+      "id": "RACE_FINISH",
+      "name": "RACE_FINISH",
+      "kind": "race_finish",
+      "x": 85,
+      "y": 778,
+      "elevation_m": null
+    },
+    {
+      "id": "LODGE",
+      "name": "Main Lodge",
+      "kind": "base_lodge",
+      "x": 721.7090830479773,
+      "y": 900.1934557583121,
+      "elevation_m": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "L1",
+      "name": "West Summit Express",
+      "kind": "lift",
+      "from": "W_BASE",
+      "to": "W_TOP",
+      "points": [
+        [
+          205,
+          830
+        ],
+        [
+          390,
+          165
+        ]
+      ],
+      "capacity": 600,
+      "ride_minutes": 7.0
+    },
+    {
+      "id": "L2",
+      "name": "East Ridge Express",
+      "kind": "lift",
+      "from": "E_BASE",
+      "to": "E_TOP",
+      "points": [
+        [
+          1205,
+          835
+        ],
+        [
+          1010,
+          185
+        ]
+      ],
+      "capacity": 600,
+      "ride_minutes": 7.0
+    },
+    {
+      "id": "L3",
+      "name": "Meadow Chair",
+      "kind": "lift",
+      "from": "M_BASE",
+      "to": "M_TOP",
+      "points": [
+        [
+          560,
+          870
+        ],
+        [
+          555,
+          515
+        ]
+      ],
+      "capacity": 600,
+      "ride_minutes": 4.5
+    },
+    {
+      "id": "L4",
+      "name": "Aspen Chair",
+      "kind": "lift",
+      "from": "A_BASE",
+      "to": "A_TOP",
+      "points": [
+        [
+          885,
+          875
+        ],
+        [
+          868,
+          530
+        ]
+      ],
+      "capacity": 600,
+      "ride_minutes": 4.5
+    },
+    {
+      "id": "B01_seg1",
+      "name": "North Face",
+      "kind": "run",
+      "from": "W_TOP",
+      "to": "PARK_MERGE",
+      "points": [
+        [
+          390,
+          165
+        ],
+        [
+          342,
+          260
+        ],
+        [
+          300,
+          372
+        ],
+        [
+          260,
+          500
+        ]
+      ],
+      "difficulty": "black",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "B01_seg2",
+      "name": "North Face",
+      "kind": "run",
+      "from": "PARK_MERGE",
+      "to": "W_BASE",
+      "points": [
+        [
+          260,
+          500
+        ],
+        [
+          190,
+          630
+        ],
+        [
+          160,
+          725
+        ],
+        [
+          205,
+          830
+        ]
+      ],
+      "difficulty": "black",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "B02",
+      "name": "Granite Cut",
+      "kind": "run",
+      "from": "W_TOP",
+      "to": "W_BASE",
+      "points": [
+        [
+          390,
+          165
+        ],
+        [
+          412,
+          280
+        ],
+        [
+          392,
+          425
+        ],
+        [
+          345,
+          570
+        ],
+        [
+          275,
+          710
+        ],
+        [
+          205,
+          830
+        ]
+      ],
+      "difficulty": "black",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "B03",
+      "name": "Meadow Connector \u00b7 West",
+      "kind": "run",
+      "from": "W_TOP",
+      "to": "M_JOIN",
+      "points": [
+        [
+          390,
+          165
+        ],
+        [
+          447,
+          250
+        ],
+        [
+          500,
+          330
+        ],
+        [
+          545,
+          410
+        ]
+      ],
+      "difficulty": "black",
+      "subtype": "connector",
+      "bidirectional": false
+    },
+    {
+      "id": "B04",
+      "name": "Aspen Traverse \u00b7 West",
+      "kind": "run",
+      "from": "W_TOP",
+      "to": "A_TOP",
+      "points": [
+        [
+          390,
+          165
+        ],
+        [
+          530,
+          235
+        ],
+        [
+          660,
+          330
+        ],
+        [
+          775,
+          430
+        ],
+        [
+          868,
+          530
+        ]
+      ],
+      "difficulty": "black",
+      "subtype": "connector",
+      "bidirectional": false
+    },
+    {
+      "id": "P01",
+      "name": "Westline Terrain Park",
+      "kind": "run",
+      "from": "W_TOP",
+      "to": "PARK_MERGE",
+      "points": [
+        [
+          390,
+          165
+        ],
+        [
+          300,
+          260
+        ],
+        [
+          242,
+          370
+        ],
+        [
+          260,
+          500
+        ]
+      ],
+      "difficulty": "park",
+      "subtype": "short_park",
+      "bidirectional": false
+    },
+    {
+      "id": "B05",
+      "name": "East Cliffs",
+      "kind": "run",
+      "from": "E_TOP",
+      "to": "E_BASE",
+      "points": [
+        [
+          1010,
+          185
+        ],
+        [
+          970,
+          305
+        ],
+        [
+          985,
+          455
+        ],
+        [
+          1070,
+          600
+        ],
+        [
+          1145,
+          742
+        ],
+        [
+          1205,
+          835
+        ]
+      ],
+      "difficulty": "black",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "B06",
+      "name": "Hawk\u2019s Nest",
+      "kind": "run",
+      "from": "E_TOP",
+      "to": "E_BASE",
+      "points": [
+        [
+          1010,
+          185
+        ],
+        [
+          1088,
+          310
+        ],
+        [
+          1148,
+          430
+        ],
+        [
+          1230,
+          595
+        ],
+        [
+          1270,
+          720
+        ],
+        [
+          1205,
+          835
+        ]
+      ],
+      "difficulty": "black",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "B07",
+      "name": "Aspen Connector \u00b7 East",
+      "kind": "run",
+      "from": "E_TOP",
+      "to": "A_TOP",
+      "points": [
+        [
+          1010,
+          185
+        ],
+        [
+          953,
+          292
+        ],
+        [
+          925,
+          390
+        ],
+        [
+          868,
+          530
+        ]
+      ],
+      "difficulty": "black",
+      "subtype": "connector",
+      "bidirectional": false
+    },
+    {
+      "id": "B08",
+      "name": "Meadow Traverse \u00b7 East",
+      "kind": "run",
+      "from": "E_TOP",
+      "to": "M_JOIN",
+      "points": [
+        [
+          1010,
+          185
+        ],
+        [
+          881,
+          255
+        ],
+        [
+          760,
+          325
+        ],
+        [
+          652,
+          375
+        ],
+        [
+          545,
+          410
+        ]
+      ],
+      "difficulty": "black",
+      "subtype": "connector",
+      "bidirectional": false
+    },
+    {
+      "id": "B09",
+      "name": "Meadow Link \u00b7 Final",
+      "kind": "run",
+      "from": "M_JOIN",
+      "to": "M_TOP",
+      "points": [
+        [
+          545,
+          410
+        ],
+        [
+          540,
+          460
+        ],
+        [
+          555,
+          515
+        ]
+      ],
+      "difficulty": "black",
+      "subtype": "connector",
+      "bidirectional": false
+    },
+    {
+      "id": "P02",
+      "name": "Eastline Terrain Park",
+      "kind": "run",
+      "from": "E_TOP",
+      "to": "E_BASE",
+      "points": [
+        [
+          1010,
+          185
+        ],
+        [
+          1205,
+          282
+        ],
+        [
+          1347,
+          458
+        ],
+        [
+          1370,
+          610
+        ],
+        [
+          1335,
+          741
+        ],
+        [
+          1205,
+          835
+        ]
+      ],
+      "difficulty": "park",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "B10",
+      "name": "West Needle \u00b7 Race Line",
+      "kind": "run",
+      "from": "RACE_GATE",
+      "to": "RACE_FINISH",
+      "points": [
+        [
+          105,
+          430
+        ],
+        [
+          95,
+          491
+        ],
+        [
+          65,
+          565
+        ],
+        [
+          90,
+          680
+        ],
+        [
+          85,
+          778
+        ]
+      ],
+      "difficulty": "black",
+      "subtype": "race",
+      "bidirectional": false
+    },
+    {
+      "id": "G01",
+      "name": "Meadow Loop",
+      "kind": "run",
+      "from": "M_TOP",
+      "to": "M_BASE",
+      "points": [
+        [
+          555,
+          515
+        ],
+        [
+          475,
+          594
+        ],
+        [
+          454,
+          710
+        ],
+        [
+          503,
+          816
+        ],
+        [
+          560,
+          870
+        ]
+      ],
+      "difficulty": "green",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "G02",
+      "name": "Schoolyard",
+      "kind": "run",
+      "from": "M_TOP",
+      "to": "M_BASE",
+      "points": [
+        [
+          555,
+          515
+        ],
+        [
+          522,
+          608
+        ],
+        [
+          514,
+          744
+        ],
+        [
+          535,
+          825
+        ],
+        [
+          560,
+          870
+        ]
+      ],
+      "difficulty": "green",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "U01",
+      "name": "Ribbon Blue",
+      "kind": "run",
+      "from": "M_TOP",
+      "to": "M_BASE",
+      "points": [
+        [
+          555,
+          515
+        ],
+        [
+          605,
+          602
+        ],
+        [
+          620,
+          733
+        ],
+        [
+          590,
+          830
+        ],
+        [
+          560,
+          870
+        ]
+      ],
+      "difficulty": "blue",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "U02",
+      "name": "Glade Traverse",
+      "kind": "run",
+      "from": "M_TOP",
+      "to": "M_BASE",
+      "points": [
+        [
+          555,
+          515
+        ],
+        [
+          652,
+          590
+        ],
+        [
+          680,
+          715
+        ],
+        [
+          637,
+          810
+        ],
+        [
+          560,
+          870
+        ]
+      ],
+      "difficulty": "blue",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "G03",
+      "name": "Aspen Way",
+      "kind": "run",
+      "from": "A_TOP",
+      "to": "A_BASE",
+      "points": [
+        [
+          868,
+          530
+        ],
+        [
+          815,
+          627
+        ],
+        [
+          799,
+          736
+        ],
+        [
+          832,
+          832
+        ],
+        [
+          885,
+          875
+        ]
+      ],
+      "difficulty": "green",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "G04",
+      "name": "Easy Street",
+      "kind": "run",
+      "from": "A_TOP",
+      "to": "A_BASE",
+      "points": [
+        [
+          868,
+          530
+        ],
+        [
+          848,
+          628
+        ],
+        [
+          844,
+          759
+        ],
+        [
+          859,
+          833
+        ],
+        [
+          885,
+          875
+        ]
+      ],
+      "difficulty": "green",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "U03",
+      "name": "Blue Jay",
+      "kind": "run",
+      "from": "A_TOP",
+      "to": "A_BASE",
+      "points": [
+        [
+          868,
+          530
+        ],
+        [
+          924,
+          616
+        ],
+        [
+          955,
+          730
+        ],
+        [
+          922,
+          827
+        ],
+        [
+          885,
+          875
+        ]
+      ],
+      "difficulty": "blue",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "U04",
+      "name": "Sundowner",
+      "kind": "run",
+      "from": "A_TOP",
+      "to": "A_BASE",
+      "points": [
+        [
+          868,
+          530
+        ],
+        [
+          968,
+          608
+        ],
+        [
+          1011,
+          720
+        ],
+        [
+          979,
+          818
+        ],
+        [
+          885,
+          875
+        ]
+      ],
+      "difficulty": "blue",
+      "subtype": "standard",
+      "bidirectional": false
+    },
+    {
+      "id": "T01",
+      "name": "West ridge to western race gate",
+      "kind": "ski_traverse",
+      "from": "W_TOP",
+      "to": "RACE_GATE",
+      "points": [
+        [
+          390,
+          165
+        ],
+        [
+          280,
+          260
+        ],
+        [
+          175,
+          350
+        ],
+        [
+          105,
+          430
+        ]
+      ],
+      "difficulty": null,
+      "subtype": null,
+      "bidirectional": false
+    },
+    {
+      "id": "T02",
+      "name": "East high ridge to western race gate",
+      "kind": "ski_traverse",
+      "from": "E_TOP",
+      "to": "RACE_GATE",
+      "points": [
+        [
+          1010,
+          185
+        ],
+        [
+          855,
+          260
+        ],
+        [
+          680,
+          314
+        ],
+        [
+          500,
+          370
+        ],
+        [
+          300,
+          404
+        ],
+        [
+          105,
+          430
+        ]
+      ],
+      "difficulty": null,
+      "subtype": null,
+      "bidirectional": false
+    },
+    {
+      "id": "T03",
+      "name": "West base promenade",
+      "kind": "base_transit",
+      "from": "W_BASE",
+      "to": "M_BASE",
+      "points": [
+        [
+          205,
+          830
+        ],
+        [
+          350,
+          887
+        ],
+        [
+          455,
+          902
+        ],
+        [
+          560,
+          870
+        ]
+      ],
+      "difficulty": null,
+      "subtype": null,
+      "bidirectional": true
+    },
+    {
+      "id": "T04_seg1",
+      "name": "Central base promenade",
+      "kind": "base_transit",
+      "from": "M_BASE",
+      "to": "LODGE",
+      "points": [
+        [
+          560,
+          870
+        ],
+        [
+          710,
+          902
+        ],
+        [
+          721.7090830479773,
+          900.1934557583121
+        ]
+      ],
+      "difficulty": null,
+      "subtype": null,
+      "bidirectional": true
+    },
+    {
+      "id": "T04_seg2",
+      "name": "Central base promenade",
+      "kind": "base_transit",
+      "from": "LODGE",
+      "to": "A_BASE",
+      "points": [
+        [
+          721.7090830479773,
+          900.1934557583121
+        ],
+        [
+          885,
+          875
+        ]
+      ],
+      "difficulty": null,
+      "subtype": null,
+      "bidirectional": true
+    },
+    {
+      "id": "T05",
+      "name": "East base promenade",
+      "kind": "base_transit",
+      "from": "A_BASE",
+      "to": "E_BASE",
+      "points": [
+        [
+          885,
+          875
+        ],
+        [
+          1043,
+          899
+        ],
+        [
+          1205,
+          835
+        ]
+      ],
+      "difficulty": null,
+      "subtype": null,
+      "bidirectional": true
+    },
+    {
+      "id": "T06",
+      "name": "Race finish to West base",
+      "kind": "base_transit",
+      "from": "RACE_FINISH",
+      "to": "W_BASE",
+      "points": [
+        [
+          85,
+          778
+        ],
+        [
+          146,
+          797
+        ],
+        [
+          205,
+          830
+        ]
+      ],
+      "difficulty": null,
+      "subtype": null,
+      "bidirectional": true
+    }
+  ],
+  "reviewed": false,
+  "uncertainties": [
+    {
+      "id": "REFERENCE_LODGE",
+      "message": "Reference-only: Main Lodge is a configured midpoint on the promenade, not printed on this original background image. This example is known source topology, not an AI extraction.",
+      "severity": "warning",
+      "resolved": false
+    }
+  ]
+}
