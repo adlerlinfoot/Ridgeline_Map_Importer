@@ -66,7 +66,7 @@ export function validateDraft(d,{review=false}={}){
   if(d.nodes.some(n=>n.elevation_m==null))warnings.push('Missing elevations will use synthetic relative heights for visualization.');
   if(d.edges.some(e=>e.kind==='lift'&&(e.capacity==null||e.ride_minutes==null)))warnings.push('Missing capacities/ride times use explicit synthetic defaults.');
   if(!d.edges.some(e=>e.kind==='run'&&e.difficulty==='park'))warnings.push('No park terrain: park-lapper draws fall back to general lappers.');
-  if(!d.edges.some(e=>e.kind==='run'&&e.subtype==='race'))warnings.push('No designated race: race-lapper draws fall back to general lappers.');
+  if(!d.edges.some(e=>e.kind==='run'&&e.subtype==='race'))warnings.push('No designated race: race-lapper probability is zero; remaining subtype weights are renormalized proportionally.');
   return {errors:[...new Set(errors)],warnings:[...new Set(warnings)]};
 }
 
