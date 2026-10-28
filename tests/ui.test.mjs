@@ -13,6 +13,21 @@ const lodge=$('graph').querySelector('[data-node="home"]');lodge.dispatchEvent(n
 $('graph').dispatchEvent(new w.MouseEvent('pointerup',{bubbles:true}));
 w.document.querySelector('[data-tool="split"]').click();$('graph').querySelector('[data-edge="WalkA"]').dispatchEvent(new w.MouseEvent('pointerdown',{bubbles:true,clientX:300,clientY:600}));assert.equal(JSON.parse($('draft-json').value).nodes.length,8);
 $('reviewed').checked=true;$('reviewed').dispatchEvent(new w.Event('change'));assert.equal($('download-map').disabled,false);$('download-map').click();const b=JSON.parse(await blobs[0].text());assert.equal(b.map.lifts.length,3);assert.ok(b.map.nodes.some(n=>n.name==='Custom Lodge'));
+// Repeated verification reads pending JSON, removes repaired errors and refreshes assumptions.
+const saved=JSON.parse($('draft-json').value),edited=structuredClone(saved);
+edited.nodes.forEach(n=>n.elevation_m=null);edited.edges.find(e=>e.kind==='lift').capacity=-1;
+$('draft-json').value=JSON.stringify(edited);$('draft-json').dispatchEvent(new w.Event('input'));$('verify').click();
+assert.match($('validation').textContent,/Invalid lift capacity/);assert.match($('validation').textContent,/Missing elevations/);
+edited.edges.filter(e=>e.kind==='lift').forEach(e=>{e.capacity=600;e.ride_minutes=5;});
+// Heights follow the fixture's known downhill geometry.
+edited.nodes.forEach(n=>n.elevation_m=1000-n.y);
+$('draft-json').value=JSON.stringify(edited);$('draft-json').dispatchEvent(new w.Event('input'));$('verify').click();
+assert.doesNotMatch($('validation').textContent,/Invalid lift capacity|Missing elevations|Missing capacities/);
+$('draft-json').value=JSON.stringify(saved);$('draft-json').dispatchEvent(new w.Event('input'));$('verify').click();
+w.document.querySelector('[data-tool="inspect"]').click();const selection=$('graph').querySelector('[data-node="home"]');selection.dispatchEvent(new w.MouseEvent('pointerdown',{bubbles:true,clientX:500,clientY:650}));
+$('node-height').value='-1';$('node-height').dispatchEvent(new w.Event('input'));$('verify').click();assert.match($('validation').textContent,/Invalid node elevation/);
+$('node-height').value='';$('node-height').dispatchEvent(new w.Event('input'));$('verify').click();assert.doesNotMatch($('validation').textContent,/Invalid node elevation/);
+$('graph').dispatchEvent(new w.MouseEvent('pointerup',{bubbles:true}));
 $('draft-json').value='{broken';$('apply-json').click();assert.ok($('status').classList.contains('error'));
 globalThis.createImageBitmap=async()=>({width:1000,height:700,close(){}});
 w.HTMLCanvasElement.prototype.getContext=()=>({fillRect(){},drawImage(){}});

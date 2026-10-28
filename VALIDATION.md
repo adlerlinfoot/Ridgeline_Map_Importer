@@ -12,3 +12,5 @@ The original mountain is unchanged on disk. Imported normalized graphs are appli
 Regression fixes: uploaded maps immediately initialize an editable draft. Added cancellation tests for matching job IDs, cancel-before-start, server release, and stale response protection. The jsdom UI regression checks upload, node/route creation, splitting, deleting, dragging and cancellation without invoking Kiro. Run npm install followed by npm test.
 
 Verify topology explicitly displays validation results and scrolls to blockers. Physical scale and service defaults now participate in button gating and update on input; UI regression covers blocked, verified and invalid-default states.
+
+Verification refresh regression: selected-element fields synchronize on input; Verify applies pending JSON before checking a fresh snapshot. Pending JSON is not overwritten by other validation calls. Tests exercise repeated broken/repaired verification loops and disappearance of outdated errors/default assumptions.
