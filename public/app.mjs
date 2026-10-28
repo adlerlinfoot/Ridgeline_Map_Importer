@@ -1,7 +1,7 @@
 import {validateDraft,compileDraft,protocol} from './core.mjs';
 const $=id=>document.getElementById(id),svg=$('graph');
 const colors={lift:'#ff666b',green:'#68be91',blue:'#65a3d9',black:'#202e3c',park:'#f4ad62',base_transit:'#d7d7d7',ski_traverse:'#a584c8'};
-let draft=null,image=null,selected=null,tool='inspect',drag=null,route=[],job=null,revision=0,jsonDirty=false;
+let draft=null,image=null,selected=null,tool='inspect',drag=null,route=[],job=null,revision=0,jsonDirty=false,issueFocus=null;
 const status=(text,error=false)=>{$('status').textContent=text;$('status').className=error?'error':'';};
 const node=id=>draft.nodes.find(n=>n.id===id),edge=id=>draft.edges.find(e=>e.id===id);
 function element(tag,attrs={},text){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(text)e.textContent=text;return e;}
@@ -9,7 +9,7 @@ function point(event){const r=svg.getBoundingClientRect();return [Math.max(0,Mat
 function id(prefix,items){let i=1;while(items.some(x=>x.id===prefix+i))i++;return prefix+i;}
 function changed(){revision++;draft.reviewed=false;$('reviewed').checked=false;draw();validate();}
 function view(){svg.setAttribute('viewBox',`0 0 ${draft.width} ${draft.height}`);$('image-stage').style.aspectRatio=`${draft.width} / ${draft.height}`;$('image-stage').style.minHeight='0';$('source-image').style.minHeight='0';}
-function load(d){if(!d||!Array.isArray(d.nodes)||!Array.isArray(d.edges)||!Number.isFinite(d.width)||!Number.isFinite(d.height)||d.width<10||d.height<10||d.nodes.length>150||d.edges.length>300)throw new Error('Invalid draft shape or size');revision++;jsonDirty=false;draft=structuredClone(d);draft.reviewed=false;selected=null;route=[];$('reviewed').checked=false;view();draw();fields();issues();validate();}
+function load(d){if(!d||!Array.isArray(d.nodes)||!Array.isArray(d.edges)||!Number.isFinite(d.width)||!Number.isFinite(d.height)||d.width<10||d.height<10||d.nodes.length>150||d.edges.length>300)throw new Error('Invalid draft shape or size');revision++;jsonDirty=false;issueFocus=null;draft=structuredClone(d);draft.reviewed=false;selected=null;route=[];$('reviewed').checked=false;view();draw();fields();issues();validate();}
 function draw(){
   if(!draft)return;svg.replaceChildren();const radius=draft.width/160;
   for(const e of draft.edges){if(!Array.isArray(e.points)||e.points.length<2||e.points.some(p=>!Array.isArray(p)||p.length!==2||!p.every(Number.isFinite)))continue;const color=e.kind==='run'?colors[e.difficulty]:colors[e.kind];const line=element('polyline',{points:e.points.map(p=>p.join(',')).join(' '),fill:'none',stroke:color??'#fff','stroke-width':selected?.id===e.id?radius*.9:radius*.55,'stroke-linejoin':'round','data-edge':e.id});if(e.kind==='base_transit')line.setAttribute('stroke-dasharray',`${radius} ${radius*.7}`);line.append(element('title',{},e.id+' · '+e.name));svg.append(line);
@@ -17,8 +17,15 @@ function draw(){
     if(e.kind!=='base_transit'&&e.points.length>1){const a=e.points.at(-2),b=e.points.at(-1),dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,x=a[0]+dx*.7,y=a[1]+dy*.7;svg.append(element('path',{d:`M ${x-dx/len*radius-dy/len*radius*.55} ${y-dy/len*radius+dx/len*radius*.55} L ${x} ${y} L ${x-dx/len*radius+dy/len*radius*.55} ${y-dy/len*radius-dx/len*radius*.55}`,fill:'none',stroke:color??'#fff','stroke-width':radius*.3,'pointer-events':'none'}));}
     if(selected?.id===e.id)e.points.slice(1,-1).forEach((p,i)=>svg.append(element('circle',{cx:p[0],cy:p[1],r:radius*.6,fill:'#fff',stroke:'#142d38','data-handle':i+1,'data-route':e.id})));
   }
-  for(const n of draft.nodes){svg.append(element('circle',{cx:n.x,cy:n.y,r:radius*(selected?.id===n.id?1.2:1),fill:n.id===draft.lodge?'#ffe0a4':'#ddf5f0',stroke:'#122c39','stroke-width':radius*.3,'data-node':n.id}));const text=element('text',{x:n.x+radius*1.5,y:n.y-radius*1.3,fill:'#091821',stroke:'#fff','stroke-width':radius*.12,'paint-order':'stroke','font-size':radius*1.8,'font-family':'system-ui','pointer-events':'none'},n.name||n.id);svg.append(text);}
+  for(const n of draft.nodes){svg.append(element('circle',{cx:n.x,cy:n.y,r:radius*(selected?.id===n.id?1.2:1),fill:n.id===draft.lodge?'#ffe0a4':'#ddf5f0',stroke:'#122c39','stroke-width':radius*.3,'data-node':n.id}));const text=element('text',{x:n.x+radius*1.5,y:n.y-radius*1.3,fill:'#091821',stroke:'#fff','stroke-width':radius*.12,'paint-order':'stroke','data-label':n.id,'font-size':radius*1.8,'font-family':'system-ui','pointer-events':'none'},n.name||n.id);svg.append(text);}
   if(route.length)svg.append(element('polyline',{points:route.map(p=>p.join(',')).join(' '),fill:'none',stroke:'#ffec88','stroke-width':radius*.6,'stroke-dasharray':`${radius} ${radius}`}));
+  const focused=issueFocus&&edge(issueFocus.elementId),relevant=new Set(focused?[focused.from,focused.to]:[]);
+  $('clear-focus').hidden=!focused;$('source-image').style.filter=focused?'grayscale(1) opacity(.25)':'';
+  if(focused){
+    for(const el of svg.children){const related=el.getAttribute('data-edge')===focused.id||el.getAttribute('data-route')===focused.id||relevant.has(el.getAttribute('data-node'))||relevant.has(el.getAttribute('data-label'));
+      el.style.opacity=related?'1':'.12';el.style.filter=related?'':'grayscale(1)';}
+    for(const nid of relevant){const n=node(nid);if(n)svg.append(element('circle',{cx:n.x,cy:n.y,r:radius*2,fill:'none',stroke:'#ff68b6','stroke-width':radius*.4,'pointer-events':'none','data-focus-ring':nid}));}
+  }
 }
 function fields(){
   const n=selected?.type==='node'?node(selected.id):null,e=selected?.type==='edge'?edge(selected.id):null;
@@ -29,16 +36,18 @@ function fields(){
   }
 }
 function issues(){
+  $('ignore-legend').checked=!!draft?.ignoreLegend;
   $('legend-summary').textContent=draft?.legend?`Key: ${draft.legend.corner??'unspecified'} · ${(Array.isArray(draft.legend.entries)?draft.legend.entries:[]).map(e=>e.label+' → '+e.meaning).join('; ')}`:'No legend read yet.';
   $('issues').replaceChildren(...(Array.isArray(draft?.uncertainties)?draft.uncertainties:[]).map(u=>{const box=document.createElement('div');box.className='issue';const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=Boolean(u.resolved);input.onchange=()=>{u.resolved=input.checked;changed();};label.append(input,document.createTextNode((u.severity==='blocking'?'IMAGE REVIEW REQUIRED: ':'IMAGE NOTE: ')+u.message));box.append(label);return box;}));
 }
 function validate(){
   if(!draft)return;const snapshot=structuredClone(draft),v=validateDraft(snapshot,{review:true});
   try{compileDraft(snapshot,{metersPerPixel:Number($('scale').value),capacity:Number($('capacity').value),rideMinutes:Number($('ride').value),requireReview:false});}catch(e){if(!validateDraft(snapshot).errors.length)v.errors.push(e.message);}
+  if(issueFocus&&!v.diagnostics?.some(d=>d.elementId===issueFocus.elementId&&d.code===issueFocus.code)){issueFocus=null;draw();}
   $('validation').replaceChildren();
   for(const [label,list,cls] of [['Must fix',v.errors,'error'],['Assumptions',v.warnings,'warning']])if(list.length){const heading=document.createElement('p');heading.textContent=label;heading.className=cls;const ul=document.createElement('ul');for(const text of list){const li=document.createElement('li');li.textContent=text;
     const diagnostic=v.diagnostics?.find(d=>d.message===text);
-    if(diagnostic?.elementId){const button=document.createElement('button');button.textContent='Locate route';button.type='button';button.onclick=()=>{document.querySelector('[data-tool="inspect"]').click();selected={type:'edge',id:diagnostic.elementId};draw();fields();$('image-stage').scrollIntoView?.({behavior:'smooth',block:'center'});status('Selected '+(edge(diagnostic.elementId)?.name||diagnostic.elementId)+'. Edit this route or click an endpoint node to change Node type.');};li.append(document.createTextNode(' '),button);}
+    if(diagnostic?.elementId){const button=document.createElement('button');button.textContent='Locate route';button.type='button';button.onclick=()=>{document.querySelector('[data-tool="inspect"]').click();selected={type:'edge',id:diagnostic.elementId};issueFocus={elementId:diagnostic.elementId,code:diagnostic.code};draw();fields();$('image-stage').scrollIntoView?.({behavior:'smooth',block:'center'});status('Selected '+(edge(diagnostic.elementId)?.name||diagnostic.elementId)+'. Edit this route or click an endpoint node to change Node type.');};li.append(document.createTextNode(' '),button);}
     if(text.startsWith('Identify a corner legend')){const button=document.createElement('button');button.textContent='Set legend';button.onclick=()=>{$('manual-legend').scrollIntoView?.({behavior:'smooth',block:'center'});$('legend-corner').focus();};li.append(document.createTextNode(' '),button);}
     ul.append(li);}$('validation').append(heading,ul);}
   if(!v.errors.length){const p=document.createElement('p');p.className='success';p.textContent=`Ready: ${draft.nodes.length} nodes · ${draft.edges.filter(e=>e.kind==='lift').length} lifts · ${draft.edges.length} route edges`;$('validation').append(p);}
@@ -73,6 +82,8 @@ for(const id of ['node-name','node-kind','node-height'])$(id).oninput=$(id).onch
 for(const id of ['edge-name','edge-from','edge-to','edge-kind','edge-difficulty','edge-race','edge-capacity','edge-ride','edge-both'])$(id).oninput=$(id).onchange=()=>{if(selected?.type!=='edge')return;const e=edge(selected.id);e.name=$('edge-name').value;e.from=$('edge-from').value;e.to=$('edge-to').value;e.kind=$('edge-kind').value;e.difficulty=$('edge-difficulty').value;e.subtype=$('edge-race').checked?'race':'standard';e.capacity=$('edge-capacity').value===''?null:Number($('edge-capacity').value);e.ride_minutes=$('edge-ride').value===''?null:Number($('edge-ride').value);e.bidirectional=$('edge-both').checked;if(node(e.from))e.points[0]=[node(e.from).x,node(e.from).y];if(node(e.to))e.points[e.points.length-1]=[node(e.to).x,node(e.to).y];changed();};
 $('make-lodge').onclick=()=>{if(selected?.type==='node'){const n=node(selected.id);n.kind='base_lodge';draft.lodge=n.id;changed();fields();}};
 $('delete').onclick=()=>{if(!selected)return;if(selected.type==='edge')draft.edges=draft.edges.filter(e=>e.id!==selected.id);else{draft.nodes=draft.nodes.filter(n=>n.id!==selected.id);draft.edges=draft.edges.filter(e=>e.from!==selected.id&&e.to!==selected.id);}selected=null;changed();fields();};
+$('clear-focus').onclick=()=>{issueFocus=null;draw();};
+$('ignore-legend').onchange=()=>{if(!draft)return;draft.ignoreLegend=$('ignore-legend').checked;changed();issues();};
 $('verify').onclick=()=>{
   if(!draft){status('Upload a map or open a saved draft before verifying.',true);return;}
   if(jsonDirty){try{load(JSON.parse($('draft-json').value));}catch(e){$('validation').replaceChildren();const p=document.createElement('p');p.className='error';p.textContent='Must fix: Invalid draft JSON: '+e.message;$('validation').append(p);$('apply').disabled=true;$('download-map').disabled=true;status('Verification stopped: correct the draft JSON first.',true);return;}}
@@ -100,7 +111,7 @@ async function setImage(file){
   await cancelAnalysis();
   pendingDraft=null;$('use-extracted').hidden=true;
   $('source-image').src=url;
-  load({name:file.name?.replace(/\.[^.]+$/,'')||'Manual map',width:image.width,height:image.height,legend:{corner:'top-left',entries:[]},lodge:null,nodes:[],edges:[],uncertainties:[],reviewed:false});
+  load({name:file.name?.replace(/\.[^.]+$/,'')||'Manual map',width:image.width,height:image.height,legend:{corner:'top-left',entries:[]},ignoreLegend:true,lodge:null,nodes:[],edges:[],uncertainties:[],reviewed:false});
   $('analyze').disabled=false;status(`Image ready: ${image.width} � ${image.height}. Edit manually now, or read the image with Kiro.`);
 }
 $('image-file').onchange=async e=>{try{if(e.target.files[0])await setImage(e.target.files[0]);}catch(error){status(error.message,true);}};

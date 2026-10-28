@@ -24,3 +24,9 @@ test('route errors identify user names, endpoint types and locatable references'
  const issue=validateDraft(d).diagnostics.find(x=>x.elementId===e.id&&x.message.startsWith('Lift must'));
  assert.ok(issue);assert.match(issue.message,/Summit Express/);assert.match(issue.message,/junction/);assert.match(issue.message,/start node type/);
 });
+
+test('manual legend opt-out permits compilation without weakening graph checks',()=>{
+ const d=draft();delete d.legend;assert.ok(validateDraft(d).errors.some(e=>/legend/.test(e)));
+ d.ignoreLegend=true;assert.equal(validateDraft(d).errors.length,0);assert.deepEqual(compileDraft(d).map.provenance.legend,{ignored:true});
+ d.edges.find(e=>e.kind==='lift').capacity=-1;assert.ok(validateDraft(d).errors.some(e=>/capacity/.test(e)));
+});

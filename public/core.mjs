@@ -61,7 +61,7 @@ export function validateDraft(d,{review=false}={}){
   if(lifts.length&&!lifts.some(l=>reach(l.to,noviceSafe,bases)))errors.push('No green/blue-only descent is served by a lift; vacationers cannot operate.');
   const issues=Array.isArray(d.uncertainties)?d.uncertainties:[];
   for(const issue of issues)if(!issue.resolved){if(issue.severity==='blocking')errors.push('Unresolved image ambiguity: '+String(issue.message).slice(0,500));else warnings.push(String(issue.message).slice(0,500));}
-  if(!['top-left','top-right','bottom-left','bottom-right'].includes(d.legend?.corner)||!Array.isArray(d.legend?.entries)||!d.legend.entries.length||d.legend.entries.length>40)errors.push('Identify a corner legend with 1–40 entries.');
+  if(!d.ignoreLegend&&(!['top-left','top-right','bottom-left','bottom-right'].includes(d.legend?.corner)||!Array.isArray(d.legend?.entries)||!d.legend.entries.length||d.legend.entries.length>40))errors.push('Identify a corner legend with 1–40 entries.');
   if(review&&!d.reviewed)errors.push('Review the image overlay and confirm the draft before applying.');
   if(d.nodes.some(n=>n.elevation_m==null))warnings.push('Missing elevations will use synthetic relative heights for visualization.');
   if(d.edges.some(e=>e.kind==='lift'&&(e.capacity==null||e.ride_minutes==null)))warnings.push('Missing capacities/ride times use explicit synthetic defaults.');
@@ -75,7 +75,7 @@ export function validateDraft(d,{review=false}={}){
     let text=message.slice(0,-suffix.length)+(suffix.startsWith(':')?': ':suffix.startsWith('from')?'from ':'to ')+`"${e.name||e.id}" [${e.id}] - ${label(a)} -> ${label(b)}.`;
     if(message.startsWith('Lift must'))text+=' Set the start node type to lift_base and the end node type to lift_top, after checking direction.';
     if(message.startsWith('Walking links'))text+=' Walking requires base-location node types at both ends. A downhill skiing connection should be a ski traverse.';
-    return {message:text,elementType:'edge',elementId:e.id};
+    return {message:text,elementType:'edge',elementId:e.id,code:message.slice(0,-suffix.length)};
   });
   return {errors:diagnostics.map(d=>d.message),warnings:[...new Set(warnings)],diagnostics};
 }
@@ -95,7 +95,7 @@ export function compileDraft(d,{metersPerPixel=2,capacity=600,rideMinutes=5,requ
   // Snap only after the validator has established <=3px endpoint agreement.
   for(const e of [...lifts,...runs,...transfers]){const a=nmap[e.base??e.start_node??e.from],b=nmap[e.top??e.end_node??e.to];e.polyline[0]=[a.x,a.y];e.polyline[e.polyline.length-1]=[b.x,b.y];e.centerline_length_m=length(e.polyline,scaled);}
   const liftIds=lifts.map(l=>l.id),lodge=d.lodge??d.nodes.find(n=>n.kind==='base_lodge').id;
-  const map={schema_version:'ridgeline-import-1',name:String(d.name||'Imported mountain').slice(0,150),synthetic:true,behavior:{generated:true},coordinate_system:{width_px:1400,height_px:960,meters_per_pixel_xy:scaled},nodes,lifts,runs,transfers,spawn_node:lodge,scenarios:{imported:{active_lifts:liftIds,inactive_lifts:[],active_run_ids:runs.map(r=>r.id),inactive_run_ids:[],vacationer_lifts:liftIds}},provenance:{imageWidth:d.width,imageHeight:d.height,legend:d.legend,assumptions:[...check.warnings,'Relative display elevations normalized to 2350–3100m; source elevations retained separately.','No implicit junctions at visual crossings.'],defaults:{metersPerPixel,capacity,rideMinutes},reviewed:true}};
+  const map={schema_version:'ridgeline-import-1',name:String(d.name||'Imported mountain').slice(0,150),synthetic:true,behavior:{generated:true},coordinate_system:{width_px:1400,height_px:960,meters_per_pixel_xy:scaled},nodes,lifts,runs,transfers,spawn_node:lodge,scenarios:{imported:{active_lifts:liftIds,inactive_lifts:[],active_run_ids:runs.map(r=>r.id),inactive_run_ids:[],vacationer_lifts:liftIds}},provenance:{imageWidth:d.width,imageHeight:d.height,legend:d.ignoreLegend?{ignored:true}:d.legend,assumptions:[...check.warnings,'Relative display elevations normalized to 2350–3100m; source elevations retained separately.','No implicit junctions at visual crossings.'],defaults:{metersPerPixel,capacity,rideMinutes},reviewed:true}};
   return {protocol,map,spawnNode:lodge,warnings:check.warnings};
 }
 
