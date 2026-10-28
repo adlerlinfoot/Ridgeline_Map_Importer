@@ -42,7 +42,7 @@ w.document.querySelector('[data-tool="node"]').click();
 const click=(target,x,y)=>target.dispatchEvent(new w.MouseEvent('pointerdown',{bubbles:true,clientX:x,clientY:y}));
 click($('graph'),100,100);click($('graph'),300,300);
 assert.equal(JSON.parse($('draft-json').value).nodes.length,2);
-w.document.querySelector('[data-tool="route"]').click();
+w.document.querySelector('[data-tool="route"]').click();$('edge-kind').value='run';
 click($('graph').querySelector('[data-node="N1"]'),100,100);click($('graph').querySelector('[data-node="N2"]'),300,300);
 assert.equal(JSON.parse($('draft-json').value).edges.length,1);
 w.document.querySelector('[data-tool="split"]').click();click($('graph').querySelector('[data-edge="E1"]'),200,200);
