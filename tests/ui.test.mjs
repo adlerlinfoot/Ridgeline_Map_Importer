@@ -13,6 +13,10 @@ const lodge=$('graph').querySelector('[data-node="home"]');lodge.dispatchEvent(n
 $('graph').dispatchEvent(new w.MouseEvent('pointerup',{bubbles:true}));
 w.document.querySelector('[data-tool="split"]').click();$('graph').querySelector('[data-edge="WalkA"]').dispatchEvent(new w.MouseEvent('pointerdown',{bubbles:true,clientX:300,clientY:600}));assert.equal(JSON.parse($('draft-json').value).nodes.length,8);
 $('reviewed').checked=true;$('reviewed').dispatchEvent(new w.Event('change'));assert.equal($('download-map').disabled,false);$('download-map').click();const b=JSON.parse(await blobs[0].text());assert.equal(b.map.lifts.length,3);assert.ok(b.map.nodes.some(n=>n.name==='Custom Lodge'));
+const named=JSON.parse($('draft-json').value),lift=named.edges.find(e=>e.kind==='lift');lift.name='Named Express';named.nodes.find(n=>n.id===lift.from).kind='junction';
+$('draft-json').value=JSON.stringify(named);$('draft-json').dispatchEvent(new w.Event('input'));$('verify').click();
+const locator=[...$('validation').querySelectorAll('button')].find(b=>b.parentElement.textContent.includes('Named Express'));assert.ok(locator);locator.click();assert.match($('selection').textContent,/Named Express/);assert.equal($('edge-name').value,'Named Express');
+named.nodes.find(n=>n.id===lift.from).kind='lift_base';$('draft-json').value=JSON.stringify(named);$('draft-json').dispatchEvent(new w.Event('input'));$('verify').click();
 // Repeated verification reads pending JSON, removes repaired errors and refreshes assumptions.
 const saved=JSON.parse($('draft-json').value),edited=structuredClone(saved);
 edited.nodes.forEach(n=>n.elevation_m=null);edited.edges.find(e=>e.kind==='lift').capacity=-1;

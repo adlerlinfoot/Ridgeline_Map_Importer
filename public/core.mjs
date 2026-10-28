@@ -67,7 +67,17 @@ export function validateDraft(d,{review=false}={}){
   if(d.edges.some(e=>e.kind==='lift'&&(e.capacity==null||e.ride_minutes==null)))warnings.push('Missing capacities/ride times use explicit synthetic defaults.');
   if(!d.edges.some(e=>e.kind==='run'&&e.difficulty==='park'))warnings.push('No park terrain: park-lapper draws fall back to general lappers.');
   if(!d.edges.some(e=>e.kind==='run'&&e.subtype==='race'))warnings.push('No designated race: race-lapper probability is zero; remaining subtype weights are renormalized proportionally.');
-  return {errors:[...new Set(errors)],warnings:[...new Set(warnings)]};
+  const diagnostics=[...new Set(errors)].map(message=>{
+    const e=d.edges.find(e=>message.endsWith(': '+e.id)||message.endsWith('from '+e.id)||message.endsWith('to '+e.id));
+    if(!e)return {message};
+    const a=nodes.get(e.from),b=nodes.get(e.to),label=n=>n?`${n.name||n.id} (${n.kind})`:'missing node';
+    const suffix=message.endsWith(': '+e.id)?': '+e.id:message.endsWith('from '+e.id)?'from '+e.id:'to '+e.id;
+    let text=message.slice(0,-suffix.length)+(suffix.startsWith(':')?': ':suffix.startsWith('from')?'from ':'to ')+`"${e.name||e.id}" [${e.id}] - ${label(a)} -> ${label(b)}.`;
+    if(message.startsWith('Lift must'))text+=' Set the start node type to lift_base and the end node type to lift_top, after checking direction.';
+    if(message.startsWith('Walking links'))text+=' Walking requires base-location node types at both ends. A downhill skiing connection should be a ski traverse.';
+    return {message:text,elementType:'edge',elementId:e.id};
+  });
+  return {errors:diagnostics.map(d=>d.message),warnings:[...new Set(warnings)],diagnostics};
 }
 
 export function compileDraft(d,{metersPerPixel=2,capacity=600,rideMinutes=5,requireReview=true}={}){

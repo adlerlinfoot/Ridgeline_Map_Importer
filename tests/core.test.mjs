@@ -18,3 +18,9 @@ test('compiled plugin map runs through the actual Ridgeline engine when checkout
 });
 
 test("traced lift bends are preserved in compiled geometry",()=>{const d=draft();d.edges[0].points=[[100,600],[140,350],[100,100]];const b=compileDraft(d);assert.equal(b.map.lifts[0].polyline.length,3);assert.ok(b.map.lifts[0].centerline_length_m>1000);});
+
+test('route errors identify user names, endpoint types and locatable references',()=>{
+ const d=draft(),e=d.edges.find(e=>e.kind==='lift');e.name='Summit Express';d.nodes.find(n=>n.id===e.from).kind='junction';
+ const issue=validateDraft(d).diagnostics.find(x=>x.elementId===e.id&&x.message.startsWith('Lift must'));
+ assert.ok(issue);assert.match(issue.message,/Summit Express/);assert.match(issue.message,/junction/);assert.match(issue.message,/start node type/);
+});

@@ -22,7 +22,7 @@ function draw(){
 }
 function fields(){
   const n=selected?.type==='node'?node(selected.id):null,e=selected?.type==='edge'?edge(selected.id):null;
-  $('selection').textContent=n?`Node ${n.id}`:e?`Route ${e.id}`:'Select a node or route.';$('node-fields').hidden=!n;$('edge-fields').hidden=!e;
+  $('selection').textContent=n?`Node ${n.name||n.id} [${n.id}]`:e?`Route ${e.name||e.id} [${e.id}]`:'Select a node or route.';$('node-fields').hidden=!n;$('edge-fields').hidden=!e;
   if(n){$('node-name').value=n.name??n.id;$('node-kind').value=n.kind;$('node-height').value=n.elevation_m??'';}
   if(e){$('edge-name').value=e.name??e.id;$('edge-kind').value=e.kind;$('edge-difficulty').value=e.difficulty??'green';$('edge-race').checked=e.subtype==='race';$('edge-capacity').value=e.capacity??'';$('edge-ride').value=e.ride_minutes??'';$('edge-both').checked=e.bidirectional!==false;
     for(const [id,value] of [['edge-from',e.from],['edge-to',e.to]]){$(id).replaceChildren(...draft.nodes.map(n=>{const o=document.createElement('option');o.value=n.id;o.textContent=n.id+' Â· '+n.name;return o;}));$(id).value=value;}
@@ -36,7 +36,11 @@ function validate(){
   if(!draft)return;const snapshot=structuredClone(draft),v=validateDraft(snapshot,{review:true});
   try{compileDraft(snapshot,{metersPerPixel:Number($('scale').value),capacity:Number($('capacity').value),rideMinutes:Number($('ride').value),requireReview:false});}catch(e){if(!validateDraft(snapshot).errors.length)v.errors.push(e.message);}
   $('validation').replaceChildren();
-  for(const [label,list,cls] of [['Must fix',v.errors,'error'],['Assumptions',v.warnings,'warning']])if(list.length){const heading=document.createElement('p');heading.textContent=label;heading.className=cls;const ul=document.createElement('ul');for(const text of list){const li=document.createElement('li');li.textContent=text;ul.append(li);}$('validation').append(heading,ul);}
+  for(const [label,list,cls] of [['Must fix',v.errors,'error'],['Assumptions',v.warnings,'warning']])if(list.length){const heading=document.createElement('p');heading.textContent=label;heading.className=cls;const ul=document.createElement('ul');for(const text of list){const li=document.createElement('li');li.textContent=text;
+    const diagnostic=v.diagnostics?.find(d=>d.message===text);
+    if(diagnostic?.elementId){const button=document.createElement('button');button.textContent='Locate route';button.type='button';button.onclick=()=>{document.querySelector('[data-tool="inspect"]').click();selected={type:'edge',id:diagnostic.elementId};draw();fields();$('image-stage').scrollIntoView?.({behavior:'smooth',block:'center'});status('Selected '+(edge(diagnostic.elementId)?.name||diagnostic.elementId)+'. Edit this route or click an endpoint node to change Node type.');};li.append(document.createTextNode(' '),button);}
+    if(text.startsWith('Identify a corner legend')){const button=document.createElement('button');button.textContent='Set legend';button.onclick=()=>{$('manual-legend').scrollIntoView?.({behavior:'smooth',block:'center'});$('legend-corner').focus();};li.append(document.createTextNode(' '),button);}
+    ul.append(li);}$('validation').append(heading,ul);}
   if(!v.errors.length){const p=document.createElement('p');p.className='success';p.textContent=`Ready: ${draft.nodes.length} nodes Â· ${draft.edges.filter(e=>e.kind==='lift').length} lifts Â· ${draft.edges.length} route edges`;$('validation').append(p);}
   $('apply').disabled=!!v.errors.length||!!job;$('download-map').disabled=!!v.errors.length||!!job;$('download-draft').disabled=false;if(!jsonDirty)$('draft-json').value=JSON.stringify(draft,null,2);return v;
 }
@@ -97,7 +101,7 @@ async function setImage(file){
   pendingDraft=null;$('use-extracted').hidden=true;
   $('source-image').src=url;
   load({name:file.name?.replace(/\.[^.]+$/,'')||'Manual map',width:image.width,height:image.height,legend:{corner:'top-left',entries:[]},lodge:null,nodes:[],edges:[],uncertainties:[],reviewed:false});
-  $('analyze').disabled=false;status(`Image ready: ${image.width} × ${image.height}. Edit manually now, or read the image with Kiro.`);
+  $('analyze').disabled=false;status(`Image ready: ${image.width} ï¿½ ${image.height}. Edit manually now, or read the image with Kiro.`);
 }
 $('image-file').onchange=async e=>{try{if(e.target.files[0])await setImage(e.target.files[0]);}catch(error){status(error.message,true);}};
 $('json-file').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>3e6)throw new Error('Draft file too large');await cancelAnalysis();load(JSON.parse(await file.text()));status('Draft loaded. Upload its matching image if needed for review.');}catch(error){status(error.message,true);}};
@@ -105,7 +109,7 @@ const headers={'Content-Type':'application/json','X-Ridgeline-Plugin':'map-impor
 async function cancelAnalysis(){
   const current=job;if(!current)return;
   if(current.cancelling)return current.cancelling;
-  current.cancelled=true;current.controller.abort();status('Stopping Kiro analysis…');
+  current.cancelled=true;current.controller.abort();status('Stopping Kiro analysisï¿½');
   current.cancelling=(async()=>{
     try{const r=await fetch('/api/cancel',{method:'POST',headers,body:JSON.stringify({jobId:current.id})});if(!r.ok)throw new Error('Could not confirm cancellation. Try Cancel analysis again.');
       if(job===current){job=null;$('analyze').disabled=!image;$('cancel').disabled=true;if(draft)validate();status('Analysis cancelled. Your editable draft is retained.');}
@@ -115,7 +119,7 @@ async function cancelAnalysis(){
 $('analyze').onclick=async()=>{
   if(!image||job)return;
   const current={id:crypto.randomUUID(),controller:new AbortController(),revision,cancelled:false};job=current;
-  $('analyze').disabled=true;$('cancel').disabled=false;validate();status('Kiro is reading the image and its corner legend. This may take a few minutes…');
+  $('analyze').disabled=true;$('cancel').disabled=false;validate();status('Kiro is reading the image and its corner legend. This may take a few minutesï¿½');
   try{const r=await fetch('/api/extract',{method:'POST',headers,body:JSON.stringify({...image,jobId:current.id}),signal:current.controller.signal});const result=await r.json();if(current.cancelled||job!==current)return;if(!r.ok)throw new Error(result.error);
     if(revision!==current.revision){pendingDraft=result.draft;$('use-extracted').hidden=false;status('Analysis complete. Manual edits retained; use the extracted draft button to replace them.');}
     else{load(result.draft);status('Draft extracted. Inspect the overlay and validate before applying.');}
