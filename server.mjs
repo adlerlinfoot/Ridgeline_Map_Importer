@@ -6,7 +6,7 @@ import {analyzeImage} from './lib/vision.mjs';
 import {validateDraft} from './public/core.mjs';
 const here=fileURLToPath(new URL('.',import.meta.url));
 export function createServer({analyze=analyzeImage}={}){
-  let busy=false;const attempts=[];
+  let active=null;const attempts=[],cancelled=new Map();
   return http.createServer(async(req,res)=>{
     const origin=req.headers.origin,allowed=new Set(['http://127.0.0.1:43881','http://localhost:43881','http://127.0.0.1:43880','http://localhost:43880']);
     const send=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
@@ -16,19 +16,29 @@ export function createServer({analyze=analyzeImage}={}){
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' blob: data:; style-src 'self'; script-src 'self'; frame-ancestors http://127.0.0.1:43880 http://localhost:43880");
     if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, X-Ridgeline-Plugin'});res.end();return;}
     const url=new URL(req.url,'http://localhost');
-    if(req.method==='GET'&&url.pathname==='/api/status'){let installed=true;try{await access(process.env.KIRO_CLI_PATH??join(process.env.LOCALAPPDATA??'','Kiro-Cli','kiro-cli.exe'));}catch{installed=false;}send(200,{plugin:'ridgeline-map-importer',version:'1.0.0',kiroInstalled:installed,busy});return;}
-    if(req.method==='POST'&&url.pathname==='/api/extract'){
+    if(req.method==='GET'&&url.pathname==='/api/status'){let installed=true;try{await access(process.env.KIRO_CLI_PATH??join(process.env.LOCALAPPDATA??'','Kiro-Cli','kiro-cli.exe'));}catch{installed=false;}send(200,{plugin:'ridgeline-map-importer',version:'1.0.0',kiroInstalled:installed,busy:!!active});return;}
+    if(req.method==='POST'&&['/api/extract','/api/cancel'].includes(url.pathname)){
       if(req.headers['x-ridgeline-plugin']!=='map-importer-v1'||!req.headers['content-type']?.startsWith('application/json')){send(403,{error:'Missing plugin request headers'});return;}
       let size=0,chunks=[];try{for await(const chunk of req){size+=chunk.length;if(size>4500000)throw new Error('Image request too large (3MB image maximum)');chunks.push(chunk);}}catch(e){send(413,{error:e.message});return;}
       let body;try{body=JSON.parse(Buffer.concat(chunks).toString());}catch{send(400,{error:'Invalid JSON'});return;}
+      const nowCancel=Date.now();for(const [id,time] of cancelled)if(time<nowCancel-60000)cancelled.delete(id);
+      const jobId=body.jobId;
+      if(url.pathname==='/api/cancel'){
+        if(typeof jobId!=='string'||!/^[\w-]{1,80}$/.test(jobId)){send(400,{error:'Invalid analysis ID'});return;}
+        cancelled.set(jobId,Date.now());
+        if(active?.id===jobId){const job=active;job.controller.abort();await job.done;}
+        send(200,{cancelled:true});return;
+      }
+      if(jobId!==undefined&&(typeof jobId!=='string'||!/^[\w-]{1,80}$/.test(jobId))){send(400,{error:'Invalid analysis ID'});return;}
+      if(cancelled.has(jobId)){send(409,{error:'Analysis cancelled'});return;}
       const {data,mimeType,width,height}=body;
       if(!['image/png','image/jpeg','image/webp'].includes(mimeType)||typeof data!=='string'||data.length>4200000||!/^[A-Za-z0-9+/]+={0,2}$/.test(data)||!Number.isInteger(width)||!Number.isInteger(height)||width<10||height<10||width>2400||height>2400){send(400,{error:'Use a PNG/JPEG/WebP image resized to at most 2400 pixels and 3MB.'});return;}
       const bytes=Buffer.from(data,'base64'),valid=mimeType==='image/png'?bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])):mimeType==='image/jpeg'?bytes[0]===255&&bytes[1]===216:bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP';
       if(!valid||bytes.length>3150000){send(400,{error:'Invalid image bytes'});return;}
-      if(busy){send(409,{error:'One map is already being analyzed. Wait or cancel it first.'});return;}
+      if(active){send(409,{error:'One map is already being analyzed. Wait or cancel it first.'});return;}
       const now=Date.now();while(attempts.length&&attempts[0]<now-3600000)attempts.shift();if(attempts.length>=12){send(429,{error:'Hourly image-analysis limit reached (12).'});return;}
-      busy=true;attempts.push(now);const controller=new AbortController();res.on('close',()=>{if(!res.writableEnded)controller.abort();});
-      try{const draft=await analyze({data,mimeType,width,height},{signal:controller.signal});draft.reviewed=false;if(draft.width!==width||draft.height!==height){draft.uncertainties=Array.isArray(draft.uncertainties)?draft.uncertainties:[];draft.uncertainties.push({id:'DIMENSIONS',message:'Agent draft dimensions differ from the supplied image. Correct coordinates/dimensions against the overlay.',severity:'blocking',resolved:false});}send(200,{draft,validation:validateDraft(draft)});}catch(e){if(!res.destroyed)send(502,{error:e.message});}finally{busy=false;}return;
+      attempts.push(now);const controller=new AbortController();let finish;const job={id:jobId,controller,done:new Promise(r=>finish=r)};active=job;res.on('close',()=>{if(!res.writableEnded)controller.abort();});
+      try{const draft=await analyze({data,mimeType,width,height},{signal:controller.signal});if(controller.signal.aborted)throw new Error('Analysis cancelled');draft.reviewed=false;if(draft.width!==width||draft.height!==height){draft.uncertainties=Array.isArray(draft.uncertainties)?draft.uncertainties:[];draft.uncertainties.push({id:'DIMENSIONS',message:'Agent draft dimensions differ from the supplied image. Correct coordinates/dimensions against the overlay.',severity:'blocking',resolved:false});}send(200,{draft,validation:validateDraft(draft)});}catch(e){if(!res.destroyed)send(502,{error:e.message});}finally{if(active===job)active=null;finish();}return;
     }
     if(req.method!=='GET'){send(405,{error:'Method not allowed'});return;}
     const name=url.pathname==='/'?'index.html':decodeURIComponent(url.pathname.slice(1));

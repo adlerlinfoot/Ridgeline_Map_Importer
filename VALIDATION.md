@@ -8,3 +8,5 @@
 - Browser control exposed no browser surfaces. Full rendered desktop/mobile and drag interaction QA remains unverified; DOM/engine tests are not presented as browser screenshots.
 
 The original mountain is unchanged on disk. Imported normalized graphs are applied only after review/validation and can be discarded with Restore Ridgeline. Unknown numerical values and relative 3D heights are explicitly synthetic.
+
+Regression fixes: uploaded maps immediately initialize an editable draft. Added cancellation tests for matching job IDs, cancel-before-start, server release, and stale response protection. The jsdom UI regression checks upload, node/route creation, splitting, deleting, dragging and cancellation without invoking Kiro. Run npm install followed by npm test.
