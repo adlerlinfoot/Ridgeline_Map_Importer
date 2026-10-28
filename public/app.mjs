@@ -33,10 +33,12 @@ function issues(){
   $('issues').replaceChildren(...(Array.isArray(draft?.uncertainties)?draft.uncertainties:[]).map(u=>{const box=document.createElement('div');box.className='issue';const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=Boolean(u.resolved);input.onchange=()=>{u.resolved=input.checked;changed();};label.append(input,document.createTextNode((u.severity==='blocking'?'REVIEW REQUIRED: ':'')+u.message));box.append(label);return box;}));
 }
 function validate(){
-  if(!draft)return;const v=validateDraft(draft,{review:true});$('validation').replaceChildren();
+  if(!draft)return;const v=validateDraft(draft,{review:true});
+  try{compileDraft(draft,{metersPerPixel:Number($('scale').value),capacity:Number($('capacity').value),rideMinutes:Number($('ride').value),requireReview:false});}catch(e){if(!validateDraft(draft).errors.length)v.errors.push(e.message);}
+  $('validation').replaceChildren();
   for(const [label,list,cls] of [['Must fix',v.errors,'error'],['Assumptions',v.warnings,'warning']])if(list.length){const heading=document.createElement('p');heading.textContent=label;heading.className=cls;const ul=document.createElement('ul');for(const text of list){const li=document.createElement('li');li.textContent=text;ul.append(li);}$('validation').append(heading,ul);}
   if(!v.errors.length){const p=document.createElement('p');p.className='success';p.textContent=`Ready: ${draft.nodes.length} nodes · ${draft.edges.filter(e=>e.kind==='lift').length} lifts · ${draft.edges.length} route edges`;$('validation').append(p);}
-  $('apply').disabled=!!v.errors.length||!!job;$('download-map').disabled=!!v.errors.length||!!job;$('download-draft').disabled=false;$('draft-json').value=JSON.stringify(draft,null,2);
+  $('apply').disabled=!!v.errors.length||!!job;$('download-map').disabled=!!v.errors.length||!!job;$('download-draft').disabled=false;$('draft-json').value=JSON.stringify(draft,null,2);return v;
 }
 function moveNode(n,p){n.x=p[0];n.y=p[1];for(const e of draft.edges){if(e.from===n.id)e.points[0]=[...p];if(e.to===n.id)e.points[e.points.length-1]=[...p];}}
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=b.dataset.tool;route=[];if(tool!=='inspect'){selected=null;fields();}if(!draft)status('Upload a map first to start editing.',true);document.querySelectorAll('[data-tool]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('tool-help').textContent={inspect:'Drag nodes and selected route waypoints. Select to edit properties.',node:'Click the map to add a node, then set its type.',route:'Click a start node, add bends, then click an end node. Set route kind/difficulty first.',split:'Click a route to split it at a new junction. Lifts cannot be split.'}[tool];draw();});
@@ -67,6 +69,15 @@ for(const id of ['node-name','node-kind','node-height'])$(id).onchange=()=>{if(s
 for(const id of ['edge-name','edge-from','edge-to','edge-kind','edge-difficulty','edge-race','edge-capacity','edge-ride','edge-both'])$(id).onchange=()=>{if(selected?.type!=='edge')return;const e=edge(selected.id);e.name=$('edge-name').value;e.from=$('edge-from').value;e.to=$('edge-to').value;e.kind=$('edge-kind').value;e.difficulty=$('edge-difficulty').value;e.subtype=$('edge-race').checked?'race':'standard';e.capacity=$('edge-capacity').value===''?null:Number($('edge-capacity').value);e.ride_minutes=$('edge-ride').value===''?null:Number($('edge-ride').value);e.bidirectional=$('edge-both').checked;if(node(e.from))e.points[0]=[node(e.from).x,node(e.from).y];if(node(e.to))e.points[e.points.length-1]=[node(e.to).x,node(e.to).y];changed();};
 $('make-lodge').onclick=()=>{if(selected?.type==='node'){const n=node(selected.id);n.kind='base_lodge';draft.lodge=n.id;changed();fields();}};
 $('delete').onclick=()=>{if(!selected)return;if(selected.type==='edge')draft.edges=draft.edges.filter(e=>e.id!==selected.id);else{draft.nodes=draft.nodes.filter(n=>n.id!==selected.id);draft.edges=draft.edges.filter(e=>e.from!==selected.id&&e.to!==selected.id);}selected=null;changed();fields();};
+$('verify').onclick=()=>{
+  if(!draft){status('Upload a map or open a saved draft before verifying.',true);return;}
+  const v=validate();
+  if(job)status('Analysis is still running. Finish or cancel it before using the topology.',true);
+  else if(v.errors.length)status(`Topology blocked: ${v.errors.length} issue${v.errors.length===1?'':'s'} to fix. See the Must fix list below. Your map has been retained.`,true);
+  else status('Topology verified. Use in Ridgeline or Download topology is now available.');
+  $('validation').scrollIntoView?.({behavior:'smooth',block:'center'});
+};
+for(const id of ['scale','capacity','ride'])$(id).addEventListener('input',()=>{if(draft)validate();});
 $('reviewed').onchange=()=>{if(draft){draft.reviewed=$('reviewed').checked;validate();}};
 $('apply-json').onclick=()=>{try{const d=JSON.parse($('draft-json').value);if(!Array.isArray(d.nodes)||!Array.isArray(d.edges))throw new Error('Missing nodes/edges arrays');revision++;load(d);status('JSON changes applied; review the updated overlay.');}catch(e){status(e.message,true);}};
 function download(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}

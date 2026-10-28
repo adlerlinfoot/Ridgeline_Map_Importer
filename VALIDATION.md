@@ -10,3 +10,5 @@
 The original mountain is unchanged on disk. Imported normalized graphs are applied only after review/validation and can be discarded with Restore Ridgeline. Unknown numerical values and relative 3D heights are explicitly synthetic.
 
 Regression fixes: uploaded maps immediately initialize an editable draft. Added cancellation tests for matching job IDs, cancel-before-start, server release, and stale response protection. The jsdom UI regression checks upload, node/route creation, splitting, deleting, dragging and cancellation without invoking Kiro. Run npm install followed by npm test.
+
+Verify topology explicitly displays validation results and scrolls to blockers. Physical scale and service defaults now participate in button gating and update on input; UI regression covers blocked, verified and invalid-default states.
