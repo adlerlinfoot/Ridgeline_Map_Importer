@@ -17,7 +17,7 @@ const named=JSON.parse($('draft-json').value),lift=named.edges.find(e=>e.kind===
 $('draft-json').value=JSON.stringify(named);$('draft-json').dispatchEvent(new w.Event('input'));$('verify').click();
 const locator=[...$('validation').querySelectorAll('button')].find(b=>b.parentElement.textContent.includes('Named Express'));assert.ok(locator);locator.click();assert.match($('selection').textContent,/Named Express/);assert.equal($('edge-name').value,'Named Express');
 assert.equal($('clear-focus').hidden,false);assert.equal($('graph').querySelector('[data-edge="'+lift.id+'"]').style.opacity,'1');
-assert.ok([...$('graph').querySelectorAll('[data-edge]')].some(el=>el.style.opacity==='.12'||el.style.opacity==='0.12'));assert.equal($('graph').querySelectorAll('[data-focus-ring]').length,2);
+assert.ok([...$('graph').querySelectorAll('[data-edge]')].some(el=>el.style.opacity==='.12'||el.style.opacity==='0.12'));assert.equal($('graph').querySelectorAll('[data-focus-ring]').length,2);assert.ok($('graph').querySelector('.locate-pulse'));await new Promise(r=>setTimeout(r,3100));assert.equal($('clear-focus').hidden,true);assert.equal($('source-image').style.filter,'');assert.equal($('graph').querySelector('.locate-pulse'),null);locator.click();
 $('graph').querySelector('[data-node="'+lift.from+'"]').dispatchEvent(new w.MouseEvent('pointerdown',{bubbles:true,clientX:100,clientY:600}));
 $('node-kind').value='lift_base';$('node-kind').dispatchEvent(new w.Event('input'));
 assert.equal($('clear-focus').hidden,true);assert.equal($('source-image').style.filter,'');assert.equal($('graph').querySelectorAll('[data-focus-ring]').length,0);

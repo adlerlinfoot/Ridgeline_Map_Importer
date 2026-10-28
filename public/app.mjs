@@ -1,7 +1,7 @@
 import {validateDraft,compileDraft,protocol} from './core.mjs';
 const $=id=>document.getElementById(id),svg=$('graph');
 const colors={lift:'#ff666b',green:'#68be91',blue:'#65a3d9',black:'#202e3c',park:'#f4ad62',base_transit:'#d7d7d7',ski_traverse:'#a584c8'};
-let draft=null,image=null,selected=null,tool='inspect',drag=null,route=[],job=null,revision=0,jsonDirty=false,issueFocus=null;
+let draft=null,image=null,selected=null,tool='inspect',drag=null,route=[],job=null,revision=0,jsonDirty=false,issueFocus=null,focusTimer=null;
 const status=(text,error=false)=>{$('status').textContent=text;$('status').className=error?'error':'';};
 const node=id=>draft.nodes.find(n=>n.id===id),edge=id=>draft.edges.find(e=>e.id===id);
 function element(tag,attrs={},text){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(text)e.textContent=text;return e;}
@@ -23,8 +23,8 @@ function draw(){
   $('clear-focus').hidden=!focused;$('source-image').style.filter=focused?'grayscale(1) opacity(.25)':'';
   if(focused){
     for(const el of svg.children){const related=el.getAttribute('data-edge')===focused.id||el.getAttribute('data-route')===focused.id||relevant.has(el.getAttribute('data-node'))||relevant.has(el.getAttribute('data-label'));
-      el.style.opacity=related?'1':'.12';el.style.filter=related?'':'grayscale(1)';}
-    for(const nid of relevant){const n=node(nid);if(n)svg.append(element('circle',{cx:n.x,cy:n.y,r:radius*2,fill:'none',stroke:'#ff68b6','stroke-width':radius*.4,'pointer-events':'none','data-focus-ring':nid}));}
+      el.classList.toggle('locate-pulse',related);el.style.opacity=related?'1':'.12';el.style.filter=related?'':'grayscale(1)';}
+    for(const nid of relevant){const n=node(nid);if(n)svg.append(element('circle',{cx:n.x,cy:n.y,r:radius*2,fill:'none',stroke:'#ff68b6','stroke-width':radius*.4,'pointer-events':'none','data-focus-ring':nid,class:'locate-pulse'}));}
   }
 }
 function fields(){
@@ -47,7 +47,7 @@ function validate(){
   $('validation').replaceChildren();
   for(const [label,list,cls] of [['Must fix',v.errors,'error'],['Assumptions',v.warnings,'warning']])if(list.length){const heading=document.createElement('p');heading.textContent=label;heading.className=cls;const ul=document.createElement('ul');for(const text of list){const li=document.createElement('li');li.textContent=text;
     const diagnostic=v.diagnostics?.find(d=>d.message===text);
-    if(diagnostic?.elementId){const button=document.createElement('button');button.textContent='Locate route';button.type='button';button.onclick=()=>{document.querySelector('[data-tool="inspect"]').click();selected={type:'edge',id:diagnostic.elementId};issueFocus={elementId:diagnostic.elementId,code:diagnostic.code};draw();fields();$('image-stage').scrollIntoView?.({behavior:'smooth',block:'center'});status('Selected '+(edge(diagnostic.elementId)?.name||diagnostic.elementId)+'. Edit this route or click an endpoint node to change Node type.');};li.append(document.createTextNode(' '),button);}
+    if(diagnostic?.elementId){const button=document.createElement('button');button.textContent='Locate route';button.type='button';button.onclick=()=>{document.querySelector('[data-tool="inspect"]').click();selected={type:'edge',id:diagnostic.elementId};clearTimeout(focusTimer);const focus={elementId:diagnostic.elementId,code:diagnostic.code};issueFocus=focus;focusTimer=setTimeout(()=>{if(issueFocus===focus){issueFocus=null;draw();}},3000);draw();fields();$('image-stage').scrollIntoView?.({behavior:'smooth',block:'center'});status('Selected '+(edge(diagnostic.elementId)?.name||diagnostic.elementId)+'. Edit this route or click an endpoint node to change Node type.');};li.append(document.createTextNode(' '),button);}
     if(text.startsWith('Identify a corner legend')){const button=document.createElement('button');button.textContent='Set legend';button.onclick=()=>{$('manual-legend').scrollIntoView?.({behavior:'smooth',block:'center'});$('legend-corner').focus();};li.append(document.createTextNode(' '),button);}
     ul.append(li);}$('validation').append(heading,ul);}
   if(!v.errors.length){const p=document.createElement('p');p.className='success';p.textContent=`Ready: ${draft.nodes.length} nodes · ${draft.edges.filter(e=>e.kind==='lift').length} lifts · ${draft.edges.length} route edges`;$('validation').append(p);}
