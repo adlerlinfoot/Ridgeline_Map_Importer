@@ -16,3 +16,5 @@ Verify topology explicitly displays validation results and scrolls to blockers. 
 Verification refresh regression: selected-element fields synchronize on input; Verify applies pending JSON before checking a fresh snapshot. Pending JSON is not overwritten by other validation calls. Tests exercise repeated broken/repaired verification loops and disappearance of outdated errors/default assumptions.
 
 Manual drafts default to ignoreLegend, which can be toggled for saved drafts and is recorded in compiled provenance. Locate route dims unrelated geometry and the background, marks endpoints in pink, and clears focus once that diagnostic's element/code disappears. Tests cover legend-free compilation, retained graph checks, visual focus attributes and automatic restoration after correcting an endpoint type.
+
+Round-trip regression verifies that committed and legacy normalized maps reopen and retain seat counts, chair counts, capacity and ride time. Host integration verifies per-lift sliders, browser library persistence, switching between two saved mountains, editor opening, overlay runs and exports. Canvas calls are mocked; no real-browser visual QA was available.

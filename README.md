@@ -59,3 +59,5 @@ Tests cover graph/schema safety, direction/stranding checks, ambiguity gating, p
 No deployment, public map upload service or billing account is required. This repository is private by default.
 
 Scale is defined per pixel of the resized analysis image shown in the editor; use its displayed dimensions when deriving a physical scale from a printed distance key.
+
+Applied topologies now retain an editable source draft in their JSON. Ridgeline's Edit current topology button reopens committed maps, including older normalized topology files. Per-lift seat/chair/revolution settings survive the editor round trip. Background images are kept separately in local browser storage when available; portable files remain topology JSON.

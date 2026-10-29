@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
-import {validateDraft,compileDraft} from '../public/core.mjs';
+import {validateDraft,compileDraft,draftFromBundle} from '../public/core.mjs';
 import {extractJSON} from '../lib/vision.mjs';
 import {draft} from './fixture.mjs';
 test('arbitrary three-lift map compiles without original Ridgeline IDs',()=>{const b=compileDraft(draft());assert.equal(b.map.lifts.length,3);assert.equal(b.spawnNode,'home');assert.equal(b.map.scenarios.imported.active_lifts[0],'Chair_0');assert.ok(b.map.lifts.every(l=>l.capacity_skiers_per_hour===600));assert.ok(b.map.nodes.every(n=>n.elevation_m>=2350&&n.elevation_m<=3100));});
@@ -29,4 +29,10 @@ test('manual legend opt-out permits compilation without weakening graph checks',
  const d=draft();delete d.legend;assert.ok(validateDraft(d).errors.some(e=>/legend/.test(e)));
  d.ignoreLegend=true;assert.equal(validateDraft(d).errors.length,0);assert.deepEqual(compileDraft(d).map.provenance.legend,{ignored:true});
  d.edges.find(e=>e.kind==='lift').capacity=-1;assert.ok(validateDraft(d).errors.some(e=>/capacity/.test(e)));
+});
+
+test('committed and legacy topologies reopen and retain changed per-lift settings',()=>{
+ const b=compileDraft(draft()),l=b.map.lifts[0];Object.assign(l,{seats_per_chair:4,chair_count:40,revolution_minutes:20,ride_minutes:10,capacity_skiers_per_hour:480});
+ const reopened=draftFromBundle(b);reopened.reviewed=true;const again=compileDraft(reopened);assert.equal(again.map.lifts[0].seats_per_chair,4);assert.equal(again.map.lifts[0].ride_minutes,10);assert.equal(again.map.lifts[0].capacity_skiers_per_hour,480);
+ delete b.editableDraft;const legacy=draftFromBundle(b);legacy.reviewed=true;assert.equal(compileDraft(legacy).map.lifts.length,3);
 });
